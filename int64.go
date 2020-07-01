@@ -26,6 +26,40 @@ func (u *AtomicInt64) CAS(old, n int64) bool {
 	return atomic.CompareAndSwapInt64(&u.v, old, n)
 }
 
+// ANL add the value with i and keep it is not larger than max.
+func (u *AtomicInt64) ANL(i, max int64) {
+	for {
+		o := u.Get()
+		if o >= max {
+			return
+		}
+		n := o + i
+		if n > max {
+			n = max
+		}
+		if u.CAS(o, n) {
+			return
+		}
+	}
+}
+
+// SNL subtraction the value with i and keep it is not little than min.
+func (u *AtomicInt64) SNL(i, min int64) {
+	for {
+		o := u.Get()
+		if o <= min {
+			return
+		}
+		n := o - i
+		if n < min {
+			n = min
+		}
+		if u.CAS(o, n) {
+			return
+		}
+	}
+}
+
 // SIL set the value to n if n is larger than origin.
 func (u *AtomicInt64) SIL(n int64) bool {
 	for {

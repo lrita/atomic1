@@ -25,6 +25,12 @@ func TestAtomicInt64(t *testing.T) {
 	assert.True(u.Get() == 301)
 	u.Add(-302)
 	assert.True(u.Get() == -1)
+	u.ANL(100, 2)
+	u.ANL(100, 2)
+	assert.True(u.Get() == 2)
+	u.SNL(100, 0)
+	u.SNL(100, 0)
+	assert.True(u.Get() == 0)
 }
 
 func TestAtomicInt64Aligned(t *testing.T) {
@@ -40,6 +46,8 @@ func TestAtomicInt64Aligned(t *testing.T) {
 	)
 	assert.Equal(unsafe.Sizeof(o), unsafe.Sizeof(u))
 	assert.Equal(unsafe.Sizeof(o), unsafe.Alignof(d.u))
+
+	assert.True(uintptr(unsafe.Pointer(&d.u))%unsafe.Sizeof(o) == 0)
 }
 
 func BenchmarkInt64Add(b *testing.B) {
@@ -51,4 +59,37 @@ func BenchmarkInt64Add(b *testing.B) {
 		}
 	})
 	assert.EqualValues(b, b.N, u.Get())
+}
+
+func BenchmarkInt64ANL(b *testing.B) {
+	var u AtomicInt64
+	b.ReportAllocs()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			u.ANL(1, 100)
+			u.Add(-1)
+		}
+	})
+}
+
+func BenchmarkInt64SNL(b *testing.B) {
+	var u AtomicInt64
+	u.Set(1000)
+	b.ReportAllocs()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			u.SNL(1, 0)
+			u.Add(1)
+		}
+	})
+}
+
+func BenchmarkInt64CAS(b *testing.B) {
+	var u AtomicInt64
+	b.ReportAllocs()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			u.CAS(1, 2)
+		}
+	})
 }
